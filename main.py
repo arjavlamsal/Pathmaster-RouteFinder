@@ -1,3 +1,8 @@
+# dark blue for end nodes
+# light blue for path
+# dark green for currently searched nodes
+# light green for already searched nodes
+# white for empty
 import pygame, math, sys
 from astar import *
 
@@ -14,10 +19,34 @@ BLUE = (0, 0, 255)
 LIGHT_BLUE = (135, 206, 250)
 BLACK = (0, 0, 0)
 GRAY = (128, 128, 128)
-GREEN = (0, 255, 0)  # Color for the final path
-RED = (255, 0, 0)    # Color for evaluated nodes
 
 font = pygame.font.SysFont('Arial', 10)
+text1 = font.render('Start/End Node (Right Click)', False, BLACK)
+text2 = font.render('Wall Node (Left Click)', False, BLACK)
+text3 = font.render('Start', False, WHITE)
+text4 = font.render('Undo', False, WHITE)
+text5 = font.render('Clear', False, WHITE)
+
+icon = pygame.image.load('./img/icon.png')
+pygame.display.set_icon(icon)
+pygame.display.set_caption('Pathfinder')
+
+def update_display():
+  display.fill(WHITE)
+
+  pygame.draw.rect(display, BLUE, (10, 5, 10, 10))
+  pygame.draw.rect(display, BLACK, (200, 5, 10, 10))
+  display.blit(text1, (25, 5))
+  display.blit(text2, (215, 5))
+
+  # Buttons
+  pygame.draw.rect(display, BLACK, (355, 7, 40, 10))
+  pygame.draw.rect(display, BLACK, (435, 7, 40, 10))
+  pygame.draw.rect(display, BLACK, (515, 7, 40, 10))
+
+  display.blit(text3, (362, 6))
+  display.blit(text4, (443, 6))
+  display.blit(text5, (524, 6))
 
 rows = 40
 cols = 40
@@ -27,164 +56,136 @@ start = None
 end = None
 
 def reset_grid():
-    global grid, start, end, undo_log
-    grid, undo_log, start, end = [], [], None, None
+  global grid, start, end, undo_log
+  grid, undo_log, start, end = [], [], None, None
 
-    for i in range(rows):
-        row_nodes = []
-        for j in range(cols):
-            node = Node(grid, j, i)
-            row_nodes.append(node)
-        grid.append(row_nodes)
-    update_grid(display, grid)
+  for i in range(rows):
+    row_nodes = []
+    for j in range(cols):
+      node = Node(grid, j, i)
+      row_nodes.append(node)
+    grid.append(row_nodes)
+  update_grid(display, grid)
 
 def update_grid(display, grid):
-    rect_width = (WIDTH - 1) / cols
-    rect_height = (HEIGHT - 21) / cols
+  update_display()
+  rect_width = (WIDTH - 1)/cols
+  rect_height = (HEIGHT - 21)/cols
 
-    for i in range(rows):
-        for j in range(cols):
-            color = None
-            node = grid[i][j]
-            if node.type == 'wall':
-                color = BLACK
-            elif node == start:
-                color = BLUE
-            elif node == end:
-                color = BLUE
-            elif node.type == 'path':
-                color = LIGHT_BLUE
-            elif node.type == 'evaluated':
-                color = RED  # Color for evaluated nodes
+  for i in range(rows):
+    for j in range(cols):
+      color = None
+      node = grid[i][j]
+      if node.type == 'wall':
+        color = BLACK
+      elif node == start or node == end:
+        color = BLUE
+      elif node.type == 'path':
+        color = LIGHT_BLUE
 
-            if color:
-                pygame.draw.rect(display, color, (j * rect_width + 1, i * rect_height + 21, rect_width, rect_height))
+      if color:
+        pygame.draw.rect(display, color, (j * rect_width + 1, i * rect_height + 21, rect_width, rect_height))
+              
+  for i in range(len(grid) + 1):
+    pygame.draw.rect(display, GRAY, (i * rect_width, 20, 1, HEIGHT))
+    pygame.draw.rect(display, GRAY, (0, i * rect_height + 20, WIDTH, 1))
 
-    for i in range(len(grid) + 1):
-        pygame.draw.rect(display, GRAY, (i * rect_width, 20, 1, HEIGHT))
-        pygame.draw.rect(display, GRAY, (0, i * rect_height + 20, WIDTH, 1))
-
-    pygame.display.update()
-
+  pygame.display.update()
 reset_grid()
 update_grid(display, grid)
 
-def clear_path_nodes():
-    # Clear all path nodes, resetting them to 'road'
-    for i in range(rows):
-        for j in range(cols):
-            node = grid[i][j]
-            if node.type == 'path':
-                node.type = 'road'
-            elif node.type == 'evaluated':
-                node.type = 'road'  # Reset evaluated nodes to 'road'
-
 def draw_tile(x, y, tile_type):
-    global start, end, undo_log
-    clear_path_nodes()  # Clear path nodes before drawing new nodes
+  global start, end, undo_log
+  clear_path_nodes()
+  
+  row = ((y - 20) * rows)//(HEIGHT - 20)
+  col = (x * cols)//WIDTH
+  node = grid[row][col]
 
-    row = ((y - 20) * rows) // (HEIGHT - 20)
-    col = (x * cols) // WIDTH
-    node = grid[row][col]
+  if row < 0 or col < 0 or row >= rows or col >= cols or node.type == 'wall' or node == start or node == end:
+    return
+  elif tile_type == 'endpoint' and start and end:
+    return
 
-    # Validate position
-    if row < 0 or col < 0 or row >= rows or col >= cols or node.type == 'wall' or node == start or node == end:
-        return
-    elif tile_type == 'endpoint' and start and end:
-        return
+  if tile_type == 'wall':
+    grid[row][col].type = 'wall'
+  elif tile_type == 'endpoint':
+    if not start:
+      start = node
+    elif not end:
+      end = node
 
-    if tile_type == 'wall':
-        grid[row][col].type = 'wall'
-    elif tile_type == 'endpoint':
-        if not start:
-            start = node
-        elif not end:
-            end = node
+  undo_log.append(node)
+  update_grid(display, grid)
 
-    undo_log.append((node, node.type))  # Store the node and its type in undo_log
-    update_grid(display, grid)
+def pathfind():
+  if not start or not end:
+    print('Please mark both endpoint nodes.')
+    return
+  path = a_star(grid, start, end)
+  if not path:
+    print('No possible paths.')
+    return
+  else:
+    distance = round(path[-1].f_score, 2)
+    if distance % 1 == 0:
+      distance = int(distance)
+    print('Path found with distance ' + str(distance) + '.')
+  for node in path:
+    if node != start and node != end:
+      node.type = 'path'
+  update_grid(display, grid)
 
-def undo_action():
-    global start, end, undo_log
-
-    if undo_log:
-        node, node_type = undo_log.pop()  # Get the last action from the undo_log
-
-        if node == start:
-            start = None
-        elif node == end:
-            end = None
-        elif node_type == 'wall':
-            node.type = 'road'
-        
-        update_grid(display, grid)
-
-def visualize_pathfinding():
-    global start, end
-
-    if not start or not end:
-        return
-
-    open_set = [start]
-    closed_set = []
-
-    while open_set:
-        current_node = min(open_set, key=lambda n: n.f)
-
-        if current_node == end:
-            reconstruct_path(current_node)
-            return
-
-        open_set.remove(current_node)
-        closed_set.append(current_node)
-        current_node.type = 'evaluated'  # Mark node as evaluated
-        update_grid(display, grid)
-        pygame.time.delay(50)  # Slow down the visualization
-
-        for neighbor in current_node.neighbors:
-            if neighbor in closed_set or neighbor.type == 'wall':
-                continue
-            if neighbor not in open_set:
-                open_set.append(neighbor)
-
-def reconstruct_path(current_node):
-    while current_node:
-        current_node.type = 'path'
-        current_node = current_node.parent  # Assuming each node has a reference to its parent
-
-    update_grid(display, grid)
+def clear_path_nodes():
+  for i in range(rows):
+    for j in range(cols):
+      node = grid[i][j]
+      if node.type == 'path':
+        node.type = 'road'
+            
 
 while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT:
+      pygame.quit()
+      sys.exit()
 
-        # Check for left or right clicks
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()
-            x = mouse_pos[0]
-            y = mouse_pos[1]
+    # Test for click on start and clear button
+    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+      mouse_pos = pygame.mouse.get_pos()
+      x = mouse_pos[0]
+      y = mouse_pos[1]
+      
+      # Start button
+      if x >= 355 and x <= 395 and y >= 7 and y <= 17:
+        pathfind()
+      # Undo button
+      elif x >= 435 and x <= 475 and y >= 7 and y <= 17:
+        if len(undo_log) > 0:
+          node = undo_log[-1]
+          node.type = 'road'
+          if node == start or node == end:
+            if end:
+              end = None
+            elif start:
+              start = None 
+          update_grid(display, grid)
+          undo_log.pop(-1)
 
-            # Right click to place start/end nodes
-            if event.button == 3:
-                draw_tile(x, y, 'endpoint')
+      # Clear button
+      elif x >= 515 and x <= 555 and y >= 7 and y <= 17:
+        reset_grid()
 
-            # Left click to place walls
-            elif event.button == 1:
-                draw_tile(x, y, 'wall')
+    # Right click adds start/end node
+    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+      mouse_pos = pygame.mouse.get_pos()
+      x = mouse_pos[0]
+      y = mouse_pos[1]
+      draw_tile(x, y, 'endpoint')
 
-        # Continuous left-click for drawing walls
-        if pygame.mouse.get_pressed()[0]:
-            mouse_pos = pygame.mouse.get_pos()
-            x = mouse_pos[0]
-            y = mouse_pos[1]
-            draw_tile(x, y, 'wall')
-
-        # Undo action when 'z' key is pressed
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_z:
-            undo_action()
-
-        # Start pathfinding when 'p' key is pressed
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-            visualize_pathfinding()
+    # Left click adds wall node
+    if pygame.mouse.get_pressed()[0]:
+      mouse_pos = pygame.mouse.get_pos()
+      x = mouse_pos[0]
+      y = mouse_pos[1]
+      draw_tile(x, y, 'wall')
