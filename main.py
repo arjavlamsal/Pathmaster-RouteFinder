@@ -62,3 +62,63 @@ def update_grid(display, grid):
 
 reset_grid()
 update_grid(display, grid)
+
+def clear_path_nodes():
+    # Clear all path nodes, resetting them to 'road'
+    for i in range(rows):
+        for j in range(cols):
+            node = grid[i][j]
+            if node.type == 'path':
+                node.type = 'road'
+
+def draw_tile(x, y, tile_type):
+    global start, end, undo_log
+    clear_path_nodes()  # Clear path nodes before drawing new nodes
+
+    row = ((y - 20) * rows) // (HEIGHT - 20)
+    col = (x * cols) // WIDTH
+    node = grid[row][col]
+
+    # Validate position
+    if row < 0 or col < 0 or row >= rows or col >= cols or node.type == 'wall' or node == start or node == end:
+        return
+    elif tile_type == 'endpoint' and start and end:
+        return
+
+    if tile_type == 'wall':
+        grid[row][col].type = 'wall'
+    elif tile_type == 'endpoint':
+        if not start:
+            start = node
+        elif not end:
+            end = node
+
+    undo_log.append(node)
+    update_grid(display, grid)
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+        # Check for left or right clicks
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            x = mouse_pos[0]
+            y = mouse_pos[1]
+
+            # Right click to place start/end nodes
+            if event.button == 3:
+                draw_tile(x, y, 'endpoint')
+
+            # Left click to place walls
+            elif event.button == 1:
+                draw_tile(x, y, 'wall')
+
+        # Continuous left-click for drawing walls
+        if pygame.mouse.get_pressed()[0]:
+            mouse_pos = pygame.mouse.get_pos()
+            x = mouse_pos[0]
+            y = mouse_pos[1]
+            draw_tile(x, y, 'wall')
