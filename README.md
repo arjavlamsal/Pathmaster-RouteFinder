@@ -18,7 +18,7 @@
 # Features
 
 -   **Interactive Grid:** Click to set start and end nodes or to create walls.
--   _A*_ Pathfinding Visualization: * Observe the pathfinding process step-by-step.
+-    A* Pathfinding Visualization: Observe the pathfinding process step-by-step.
 -   **Undo Functionality:** Easily undo the last action taken.
 -   **Clear Grid:** Reset the grid to start anew.
 -   **Responsive UI:** Clear labels and buttons for easy interaction.
@@ -28,7 +28,7 @@
 
 -   **Python:** Core programming language.
 -   **Pygame:** For creating the interactive user interface and visualizations.
--   ***A*Algorithm:**** Pathfinding algorithm used for finding the shortest path.
+-   A* Algorithm: Pathfinding algorithm used for finding the shortest path.
 
 
 
