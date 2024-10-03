@@ -42,8 +42,8 @@ To run the PathMaster project locally, follow these steps:
     
     Copy code
     
-    `git clone https://github.com/arjavlamsal/pathmaster.git
-   cd pathmaster` 
+    `git clone https://github.com/arjavlamsal/pathmaster.git`
+   `cd pathmaster` 
     
 2.  **Install required libraries:** Make sure you have Python installed. Then, install Pygame using pip:
     
@@ -92,5 +92,5 @@ Contributions are welcome! If you'd like to enhance PathMaster, feel free to:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-
+ ### Created by - Arjav Lamsal
 ```
