@@ -1,4 +1,4 @@
-# Pathmaster: A Pathfinding Visualization Tool!
+# Pathmaster: A* Pathfinding Visualization Tool!
 
 
 **Pathmaster** is a visual pathfinding tool built using Python and Pygame. It implements the **A*** ***algorithm*** to find the **shortest path between two nodes on a grid**. Users can interactively add walls, set start and end points, and visualize the pathfinding process in real-time. This project serves as both an educational resource for understanding pathfinding algorithms and a demonstration of Pygame’s capabilities for creating interactive applications.
