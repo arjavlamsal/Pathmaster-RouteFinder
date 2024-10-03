@@ -1,67 +1,64 @@
-# dark blue for end nodes
-# light blue for path
-# dark green for currently searched nodes
-# light green for already searched nodes
-# white for empty
-
-import pygame, sys
+import pygame, math, sys
+from astar import *
 
 pygame.init()
 pygame.font.init()
 
-# Screen dimensions
 HEIGHT = 600
 WIDTH = 600
 
-# Set up display
 display = pygame.display.set_mode((WIDTH, HEIGHT), 0, 32)
 
-# Color definitions
 WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
+LIGHT_BLUE = (135, 206, 250)
 BLACK = (0, 0, 0)
 GRAY = (128, 128, 128)
 
-# Font setup
 font = pygame.font.SysFont('Arial', 10)
 
-# Button labels
-text1 = font.render('Start/End Node (Right Click)', False, BLACK)
-text2 = font.render('Wall Node (Left Click)', False, BLACK)
-text3 = font.render('Start', False, WHITE)
-text4 = font.render('Undo', False, WHITE)
-text5 = font.render('Clear', False, WHITE)
+rows = 40
+cols = 40
+grid = []
+undo_log = []
+start = None
+end = None
 
-# Set window icon and caption
-icon = pygame.image.load('./img/icon.png')
-pygame.display.set_icon(icon)
-pygame.display.set_caption('Pathfinder')
+def reset_grid():
+    global grid, start, end, undo_log
+    grid, undo_log, start, end = [], [], None, None
 
-# Function to update display
-def update_display():
-    display.fill(WHITE)
-    
-    # Draw labels and buttons
-    pygame.draw.rect(display, BLUE, (10, 5, 10, 10))
-    pygame.draw.rect(display, BLACK, (200, 5, 10, 10))
-    display.blit(text1, (25, 5))
-    display.blit(text2, (215, 5))
+    for i in range(rows):
+        row_nodes = []
+        for j in range(cols):
+            node = Node(grid, j, i)
+            row_nodes.append(node)
+        grid.append(row_nodes)
+    update_grid(display, grid)
 
-    # Buttons
-    pygame.draw.rect(display, BLACK, (355, 7, 40, 10))
-    pygame.draw.rect(display, BLACK, (435, 7, 40, 10))
-    pygame.draw.rect(display, BLACK, (515, 7, 40, 10))
+def update_grid(display, grid):
+    rect_width = (WIDTH - 1)/cols
+    rect_height = (HEIGHT - 21)/cols
 
-    display.blit(text3, (362, 6))
-    display.blit(text4, (443, 6))
-    display.blit(text5, (524, 6))
+    for i in range(rows):
+        for j in range(cols):
+            color = None
+            node = grid[i][j]
+            if node.type == 'wall':
+                color = BLACK
+            elif node == start or node == end:
+                color = BLUE
+            elif node.type == 'path':
+                color = LIGHT_BLUE
 
-# Game loop
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+            if color:
+                pygame.draw.rect(display, color, (j * rect_width + 1, i * rect_height + 21, rect_width, rect_height))
+              
+    for i in range(len(grid) + 1):
+        pygame.draw.rect(display, GRAY, (i * rect_width, 20, 1, HEIGHT))
+        pygame.draw.rect(display, GRAY, (0, i * rect_height + 20, WIDTH, 1))
 
-    update_display()
     pygame.display.update()
+
+reset_grid()
+update_grid(display, grid)
