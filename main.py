@@ -1,191 +1,211 @@
-# dark blue for end nodes
-# light blue for path
-# dark green for currently searched nodes
-# light green for already searched nodes
-# white for empty
-import pygame, math, sys
-from astar import *
+import pygame
+import sys
+from astar import Node, a_star  # Import necessary components from astar
 
+# Initialize Pygame
 pygame.init()
 pygame.font.init()
 
+# Constants
 HEIGHT = 600
 WIDTH = 600
+ROWS = 40
+COLS = 40
 
-display = pygame.display.set_mode((WIDTH, HEIGHT), 0, 32)
-
+# Color Definitions
 WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
 LIGHT_BLUE = (135, 206, 250)
 BLACK = (0, 0, 0)
 GRAY = (128, 128, 128)
 
-font = pygame.font.SysFont('Arial', 10)
-text1 = font.render('Start/End Node (Right Click)', False, BLACK)
-text2 = font.render('Wall Node (Left Click)', False, BLACK)
-text3 = font.render('Start', False, WHITE)
-text4 = font.render('Undo', False, WHITE)
-text5 = font.render('Clear', False, WHITE)
-
+# Setup display
+display = pygame.display.set_mode((WIDTH, HEIGHT), 0, 32)
 icon = pygame.image.load('./img/icon.png')
 pygame.display.set_icon(icon)
 pygame.display.set_caption('Pathfinder')
 
-def update_display():
-  display.fill(WHITE)
+# Font for UI text
+font = pygame.font.SysFont('Arial', 10)
+text_labels = {
+    'start_end': font.render('Start/End Node (Right Click)', False, BLACK),
+    'wall': font.render('Wall Node (Left Click)', False, BLACK),
+    'start': font.render('Start', False, WHITE),
+    'undo': font.render('Undo', False, WHITE),
+    'clear': font.render('Clear', False, WHITE),
+}
 
-  pygame.draw.rect(display, BLUE, (10, 5, 10, 10))
-  pygame.draw.rect(display, BLACK, (200, 5, 10, 10))
-  display.blit(text1, (25, 5))
-  display.blit(text2, (215, 5))
-
-  # Buttons
-  pygame.draw.rect(display, BLACK, (355, 7, 40, 10))
-  pygame.draw.rect(display, BLACK, (435, 7, 40, 10))
-  pygame.draw.rect(display, BLACK, (515, 7, 40, 10))
-
-  display.blit(text3, (362, 6))
-  display.blit(text4, (443, 6))
-  display.blit(text5, (524, 6))
-
-rows = 40
-cols = 40
+# Global Variables
 grid = []
 undo_log = []
-start = None
-end = None
+start_node = None
+end_node = None
 
 def reset_grid():
-  global grid, start, end, undo_log
-  grid, undo_log, start, end = [], [], None, None
+    """Initialize the grid and reset start and end nodes."""
+    global grid, start_node, end_node, undo_log
+    grid = []
+    undo_log = []
+    start_node = None
+    end_node = None
 
-  for i in range(rows):
-    row_nodes = []
-    for j in range(cols):
-      node = Node(grid, j, i)
-      row_nodes.append(node)
-    grid.append(row_nodes)
-  update_grid(display, grid)
+    for i in range(ROWS):
+        row_nodes = [Node(grid, j, i) for j in range(COLS)]
+        grid.append(row_nodes)
+    update_grid()
 
-def update_grid(display, grid):
-  update_display()
-  rect_width = (WIDTH - 1)/cols
-  rect_height = (HEIGHT - 21)/cols
+def update_display():
+    """Update the main display with the current state of the grid."""
+    display.fill(WHITE)
+    pygame.draw.rect(display, BLUE, (10, 5, 10, 10))  # Start/End color
+    pygame.draw.rect(display, BLACK, (200, 5, 10, 10))  # Wall color
+    display.blit(text_labels['start_end'], (25, 5))
+    display.blit(text_labels['wall'], (215, 5))
 
-  for i in range(rows):
-    for j in range(cols):
-      color = None
-      node = grid[i][j]
-      if node.type == 'wall':
-        color = BLACK
-      elif node == start or node == end:
-        color = BLUE
-      elif node.type == 'path':
-        color = LIGHT_BLUE
+    # Draw buttons
+    pygame.draw.rect(display, BLACK, (355, 7, 40, 10))  # Start Button
+    pygame.draw.rect(display, BLACK, (435, 7, 40, 10))  # Undo Button
+    pygame.draw.rect(display, BLACK, (515, 7, 40, 10))  # Clear Button
 
-      if color:
-        pygame.draw.rect(display, color, (j * rect_width + 1, i * rect_height + 21, rect_width, rect_height))
-              
-  for i in range(len(grid) + 1):
-    pygame.draw.rect(display, GRAY, (i * rect_width, 20, 1, HEIGHT))
-    pygame.draw.rect(display, GRAY, (0, i * rect_height + 20, WIDTH, 1))
+    display.blit(text_labels['start'], (362, 6))
+    display.blit(text_labels['undo'], (443, 6))
+    display.blit(text_labels['clear'], (524, 6))
 
-  pygame.display.update()
-reset_grid()
-update_grid(display, grid)
+def update_grid():
+    """Draw the grid based on the node states."""
+    update_display()
+    rect_width = (WIDTH - 1) / COLS
+    rect_height = (HEIGHT - 21) / ROWS
+
+    for i in range(ROWS):
+        for j in range(COLS):
+            node = grid[i][j]
+            color = get_node_color(node)
+            if color:
+                pygame.draw.rect(display, color, (j * rect_width + 1, i * rect_height + 21, rect_width, rect_height))
+
+    # Draw grid lines
+    for i in range(COLS + 1):
+        pygame.draw.rect(display, GRAY, (i * rect_width, 20, 1, HEIGHT))  # Vertical lines
+        pygame.draw.rect(display, GRAY, (0, i * rect_height + 20, WIDTH, 1))  # Horizontal lines
+
+    pygame.display.update()
+
+def get_node_color(node):
+    """Return the color for the specified node."""
+    if node.type == 'wall':
+        return BLACK
+    elif node == start_node or node == end_node:
+        return BLUE
+    elif node.type == 'path':
+        return LIGHT_BLUE
+    return None
 
 def draw_tile(x, y, tile_type):
-  global start, end, undo_log
-  clear_path_nodes()
-  
-  row = ((y - 20) * rows)//(HEIGHT - 20)
-  col = (x * cols)//WIDTH
-  node = grid[row][col]
+    """Update the grid with a new tile based on user input."""
+    global start_node, end_node, undo_log
+    clear_path_nodes()
 
-  if row < 0 or col < 0 or row >= rows or col >= cols or node.type == 'wall' or node == start or node == end:
-    return
-  elif tile_type == 'endpoint' and start and end:
-    return
+    row = ((y - 20) * ROWS) // (HEIGHT - 20)
+    col = (x * COLS) // WIDTH
 
-  if tile_type == 'wall':
-    grid[row][col].type = 'wall'
-  elif tile_type == 'endpoint':
-    if not start:
-      start = node
-    elif not end:
-      end = node
+    if not (0 <= row < ROWS and 0 <= col < COLS):
+        return  # Ensure the click is within the grid
 
-  undo_log.append(node)
-  update_grid(display, grid)
+    node = grid[row][col]
 
-def pathfind():
-  if not start or not end:
-    print('Please mark both endpoint nodes.')
-    return
-  path = a_star(grid, start, end)
-  if not path:
-    print('No possible paths.')
-    return
-  else:
-    distance = round(path[-1].f_score, 2)
-    if distance % 1 == 0:
-      distance = int(distance)
-    print('Path found with distance ' + str(distance) + '.')
-  for node in path:
-    if node != start and node != end:
-      node.type = 'path'
-  update_grid(display, grid)
+    # Validate tile placement
+    if node.type == 'wall' or node == start_node or node == end_node or (tile_type == 'endpoint' and start_node and end_node):
+        return
+
+    # Place wall or endpoint
+    if tile_type == 'wall':
+        node.type = 'wall'
+    elif tile_type == 'endpoint':
+        if not start_node:
+            start_node = node
+        elif not end_node:
+            end_node = node
+
+    undo_log.append(node)
+    update_grid()
 
 def clear_path_nodes():
-  for i in range(rows):
-    for j in range(cols):
-      node = grid[i][j]
-      if node.type == 'path':
-        node.type = 'road'
-            
+    """Reset all path nodes to their default state."""
+    for row in grid:
+        for node in row:
+            if node.type == 'path':
+                node.type = 'road'
 
-while True:
-  for event in pygame.event.get():
-    if event.type == pygame.QUIT:
-      pygame.quit()
-      sys.exit()
+def pathfind():
+    """Execute the A* pathfinding algorithm."""
+    if not start_node or not end_node:
+        print('Please mark both endpoint nodes.')
+        return
 
-    # Test for click on start and clear button
-    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-      mouse_pos = pygame.mouse.get_pos()
-      x = mouse_pos[0]
-      y = mouse_pos[1]
-      
-      # Start button
-      if x >= 355 and x <= 395 and y >= 7 and y <= 17:
-        pathfind()
-      # Undo button
-      elif x >= 435 and x <= 475 and y >= 7 and y <= 17:
-        if len(undo_log) > 0:
-          node = undo_log[-1]
-          node.type = 'road'
-          if node == start or node == end:
-            if end:
-              end = None
-            elif start:
-              start = None 
-          update_grid(display, grid)
-          undo_log.pop(-1)
+    path = a_star(grid, start_node, end_node)
+    if not path:
+        print('No possible paths.')
+        return
 
-      # Clear button
-      elif x >= 515 and x <= 555 and y >= 7 and y <= 17:
-        reset_grid()
+    distance = round(path[-1].f_score, 2)
+    distance = int(distance) if distance % 1 == 0 else distance
+    print(f'Path found with distance {distance}.')
 
-    # Right click adds start/end node
-    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-      mouse_pos = pygame.mouse.get_pos()
-      x = mouse_pos[0]
-      y = mouse_pos[1]
-      draw_tile(x, y, 'endpoint')
+    for node in path:
+        if node != start_node and node != end_node:
+            node.type = 'path'
+    update_grid()
 
-    # Left click adds wall node
-    if pygame.mouse.get_pressed()[0]:
-      mouse_pos = pygame.mouse.get_pos()
-      x = mouse_pos[0]
-      y = mouse_pos[1]
-      draw_tile(x, y, 'wall')
+def main_loop():
+    """Main event loop for handling user input."""
+    reset_grid()
+    update_grid()
+    
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            # Handle left click for walls and buttons
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouse_pos = pygame.mouse.get_pos()
+                x, y = mouse_pos
+
+                # Check for button clicks
+                if 355 <= x <= 395 and 7 <= y <= 17:  # Start Button
+                    pathfind()
+                elif 435 <= x <= 475 and 7 <= y <= 17:  # Undo Button
+                    undo_last_action()
+                elif 515 <= x <= 555 and 7 <= y <= 17:  # Clear Button
+                    reset_grid()
+                else:
+                    draw_tile(x, y, 'wall')  # Add wall node
+
+            # Right click to set start/end node
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+                mouse_pos = pygame.mouse.get_pos()
+                x, y = mouse_pos
+                draw_tile(x, y, 'endpoint')
+
+            # Continuous wall drawing while left button is pressed
+            if pygame.mouse.get_pressed()[0]:
+                mouse_pos = pygame.mouse.get_pos()
+                x, y = mouse_pos
+                draw_tile(x, y, 'wall')
+
+def undo_last_action():
+    """Undo the last action performed by the user."""
+    global start_node, end_node
+    if undo_log:
+        node = undo_log.pop()  # Get the last node
+        node.type = 'road'  # Reset node type
+        if node == start_node:
+            start_node = None  # Clear start node if it was undone
+        elif node == end_node:
+            end_node = None  # Clear end node if it was undone
+        update_grid()  # Refresh the grid display
+
+if __name__ == "__main__":
+    main_loop()  # Start the main event loop
