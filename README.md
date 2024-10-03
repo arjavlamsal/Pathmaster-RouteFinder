@@ -50,9 +50,12 @@ Pathmaster/
    ```
 
 2. **Install dependencies**:
-   This project requires Python 3.x. No external libraries are needed, as it uses the built-in `math` library.
+   This project requires Python 3.x. Pygame needs to be installed.
+   ```bash
+   pip install pygame
+   ```
 
-3. **Prepare input data**:
+4. **Prepare input data**:
    Place your grid definition in the `test_data` directory, ensuring it's formatted correctly as integers (0 for road, 1 for wall, and 2 for start/end nodes).
 
 ## Usage
@@ -127,4 +130,5 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ---
 
 Feel free to reach out if you have any questions or need further assistance with the project!
- ### Created by - Arjav Lamsal
+
+### Created by - Arjav Lamsal
