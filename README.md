@@ -1,4 +1,4 @@
-# Pathmaster: A Pathfinding Algorithm Visualization Tool
+# Pathmaster: A* Pathfinding Algorithm Visualization Tool
 
 ## Overview
 
@@ -17,7 +17,7 @@ Pathmaster is a Python-based pathfinding algorithm implementation featuring the 
 
 ## Features
 - **Interactive Grid Representation:** Allows users to visualize the grid layout, including walls and traversable paths. Click to set start and end nodes or to create walls.
-- **A* Algorithm Implementation**: Efficiently finds the shortest path from a start node to an end node while navigating obstacles.
+- A* Algorithm Implementation: Efficiently finds the shortest path from a start node to an end node while navigating obstacles.
 - **Heuristic Calculation**: Utilizes heuristic scoring to optimize pathfinding decisions.
 - **Reconstruction of Path**: Displays the final path found by the algorithm.
 - **Custom Input Data**: Users can provide custom grid data to test various scenarios.
