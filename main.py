@@ -1,3 +1,4 @@
+__author__ = "Arjav Lamsal"
 import pygame
 import sys
 from astar import Node, a_star  # Import necessary components from astar
