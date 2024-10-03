@@ -14,6 +14,8 @@ BLUE = (0, 0, 255)
 LIGHT_BLUE = (135, 206, 250)
 BLACK = (0, 0, 0)
 GRAY = (128, 128, 128)
+GREEN = (0, 255, 0)  # Color for the final path
+RED = (255, 0, 0)    # Color for evaluated nodes
 
 font = pygame.font.SysFont('Arial', 10)
 
@@ -37,8 +39,8 @@ def reset_grid():
     update_grid(display, grid)
 
 def update_grid(display, grid):
-    rect_width = (WIDTH - 1)/cols
-    rect_height = (HEIGHT - 21)/cols
+    rect_width = (WIDTH - 1) / cols
+    rect_height = (HEIGHT - 21) / cols
 
     for i in range(rows):
         for j in range(cols):
@@ -46,14 +48,18 @@ def update_grid(display, grid):
             node = grid[i][j]
             if node.type == 'wall':
                 color = BLACK
-            elif node == start or node == end:
+            elif node == start:
+                color = BLUE
+            elif node == end:
                 color = BLUE
             elif node.type == 'path':
                 color = LIGHT_BLUE
+            elif node.type == 'evaluated':
+                color = RED  # Color for evaluated nodes
 
             if color:
                 pygame.draw.rect(display, color, (j * rect_width + 1, i * rect_height + 21, rect_width, rect_height))
-              
+
     for i in range(len(grid) + 1):
         pygame.draw.rect(display, GRAY, (i * rect_width, 20, 1, HEIGHT))
         pygame.draw.rect(display, GRAY, (0, i * rect_height + 20, WIDTH, 1))
@@ -70,6 +76,8 @@ def clear_path_nodes():
             node = grid[i][j]
             if node.type == 'path':
                 node.type = 'road'
+            elif node.type == 'evaluated':
+                node.type = 'road'  # Reset evaluated nodes to 'road'
 
 def draw_tile(x, y, tile_type):
     global start, end, undo_log
@@ -93,7 +101,57 @@ def draw_tile(x, y, tile_type):
         elif not end:
             end = node
 
-    undo_log.append(node)
+    undo_log.append((node, node.type))  # Store the node and its type in undo_log
+    update_grid(display, grid)
+
+def undo_action():
+    global start, end, undo_log
+
+    if undo_log:
+        node, node_type = undo_log.pop()  # Get the last action from the undo_log
+
+        if node == start:
+            start = None
+        elif node == end:
+            end = None
+        elif node_type == 'wall':
+            node.type = 'road'
+        
+        update_grid(display, grid)
+
+def visualize_pathfinding():
+    global start, end
+
+    if not start or not end:
+        return
+
+    open_set = [start]
+    closed_set = []
+
+    while open_set:
+        current_node = min(open_set, key=lambda n: n.f)
+
+        if current_node == end:
+            reconstruct_path(current_node)
+            return
+
+        open_set.remove(current_node)
+        closed_set.append(current_node)
+        current_node.type = 'evaluated'  # Mark node as evaluated
+        update_grid(display, grid)
+        pygame.time.delay(50)  # Slow down the visualization
+
+        for neighbor in current_node.neighbors:
+            if neighbor in closed_set or neighbor.type == 'wall':
+                continue
+            if neighbor not in open_set:
+                open_set.append(neighbor)
+
+def reconstruct_path(current_node):
+    while current_node:
+        current_node.type = 'path'
+        current_node = current_node.parent  # Assuming each node has a reference to its parent
+
     update_grid(display, grid)
 
 while True:
@@ -122,3 +180,11 @@ while True:
             x = mouse_pos[0]
             y = mouse_pos[1]
             draw_tile(x, y, 'wall')
+
+        # Undo action when 'z' key is pressed
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_z:
+            undo_action()
+
+        # Start pathfinding when 'p' key is pressed
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+            visualize_pathfinding()
