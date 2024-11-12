@@ -119,13 +119,9 @@ The algorithm follows these steps:
 - **a_star()**: Main function implementing the A* algorithm to find the shortest path.
 
 
-## Contributing
-
-Contributions are welcome! If you have suggestions for improvements, feel free to fork the repository and submit a pull request. You can also open an issue to discuss potential changes or features.
-
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2.0 License.
 
 ---
 
